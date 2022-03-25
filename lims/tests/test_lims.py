@@ -1,0 +1,150 @@
+# Copyright 2026 Dixmit
+# License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
+
+from odoo.tests import new_test_user
+from odoo.tests.common import TransactionCase
+
+
+class TestLims(TransactionCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.analyte_01 = cls.env["product.product"].create(
+            {
+                "name": "Analyte 01",
+                "type": "service",
+                "service_tracking": "laboratory",
+                "laboratory_uom_id": cls.env.ref("uom.product_uom_unit").id,
+            }
+        )
+        cls.analyte_02 = cls.env["product.product"].create(
+            {
+                "name": "Analyte 02",
+                "type": "service",
+                "service_tracking": "laboratory",
+                "laboratory_uom_id": cls.env.ref("uom.product_uom_millimeter").id,
+            }
+        )
+        cls.sample_type = cls.env["lims.sample.type"].create(
+            {
+                "name": "Blood Sample",
+            }
+        )
+        cls.analyst = new_test_user(
+            cls.env,
+            name="Because I am an analyst",
+            login="analyst",
+            password="analyst",
+            email="analyst@test.com",
+            groups="lims.group_lims_analyst",
+            company_id=cls.env.company.id,
+        )
+        cls.verifier = new_test_user(
+            cls.env,
+            name="Because I am a verifier",
+            login="verifier",
+            password="verifier",
+            email="verifier@test.com",
+            groups="lims.group_lims_verifier",
+            company_id=cls.env.company.id,
+        )
+
+    def test_flow_01(self):
+        """
+        Lims Sample with 2 analytes
+        - Create sample with 2 analyses
+        - Receive sample
+        - Analyze both analyses
+        - Verify both analyses
+        """
+        sample = self.env["lims.sample"].create(
+            {
+                "external_identifier": "Sample 01",
+                "sample_type_id": self.sample_type.id,
+            }
+        )
+        analysis_01 = self.env["lims.analysis"].create(
+            {
+                "sample_id": sample.id,
+                "product_id": self.analyte_01.id,
+            }
+        )
+        analysis_02 = self.env["lims.analysis"].create(
+            {
+                "sample_id": sample.id,
+                "product_id": self.analyte_02.id,
+            }
+        )
+        self.assertEqual(analysis_01.uom_id, self.analyte_01.laboratory_uom_id)
+        self.assertEqual(analysis_02.uom_id, self.analyte_02.laboratory_uom_id)
+        self.assertEqual(analysis_01.state, "registered")
+        self.assertEqual(analysis_02.state, "registered")
+        self.assertEqual(sample.state, "due")
+        sample.receive_sample_action()
+        self.assertEqual(sample.state, "received")
+        self.assertEqual(analysis_01.state, "to_analyze")
+        self.assertEqual(analysis_02.state, "to_analyze")
+        analysis_01.with_user(self.analyst.id).analyze_action()
+        self.assertEqual(analysis_01.state, "to_be_verified")
+        self.assertEqual(analysis_01.analyst_id, self.analyst)
+        self.assertEqual(analysis_02.state, "to_analyze")
+        self.assertEqual(sample.state, "received")
+        analysis_02.with_user(self.analyst.id).analyze_action()
+        self.assertEqual(analysis_02.state, "to_be_verified")
+        self.assertEqual(sample.state, "to_be_verified")
+        analysis_01.with_user(self.verifier.id).verify_action()
+        self.assertEqual(analysis_01.state, "verified")
+        self.assertEqual(sample.state, "to_be_verified")
+        analysis_02.with_user(self.verifier.id).verify_action()
+        self.assertEqual(analysis_02.state, "verified")
+        self.assertEqual(sample.state, "verified")
+
+    def test_flow_02(self):
+        """
+        Lims Sample with 2 analytes
+        - Create sample with 2 analyses
+        - Receive sample
+        - Analyze first analysis and verify it
+        - Analyze second analysis and verify it
+        """
+        sample = self.env["lims.sample"].create(
+            {
+                "external_identifier": "Sample 01",
+                "sample_type_id": self.sample_type.id,
+            }
+        )
+        analysis_01 = self.env["lims.analysis"].create(
+            {
+                "sample_id": sample.id,
+                "product_id": self.analyte_01.id,
+            }
+        )
+        analysis_02 = self.env["lims.analysis"].create(
+            {
+                "sample_id": sample.id,
+                "product_id": self.analyte_02.id,
+            }
+        )
+        self.assertEqual(analysis_01.uom_id, self.analyte_01.laboratory_uom_id)
+        self.assertEqual(analysis_02.uom_id, self.analyte_02.laboratory_uom_id)
+        self.assertEqual(analysis_01.state, "registered")
+        self.assertEqual(analysis_02.state, "registered")
+        self.assertEqual(sample.state, "due")
+        sample.receive_sample_action()
+        self.assertEqual(sample.state, "received")
+        self.assertEqual(analysis_01.state, "to_analyze")
+        self.assertEqual(analysis_02.state, "to_analyze")
+        analysis_01.with_user(self.analyst.id).analyze_action()
+        self.assertEqual(analysis_01.state, "to_be_verified")
+        self.assertEqual(analysis_01.analyst_id, self.analyst)
+        self.assertEqual(analysis_02.state, "to_analyze")
+        self.assertEqual(sample.state, "received")
+        analysis_01.with_user(self.verifier.id).verify_action()
+        self.assertEqual(analysis_01.state, "verified")
+        self.assertEqual(sample.state, "received")
+        analysis_02.with_user(self.analyst.id).analyze_action()
+        self.assertEqual(analysis_02.state, "to_be_verified")
+        self.assertEqual(sample.state, "to_be_verified")
+        analysis_02.with_user(self.verifier.id).verify_action()
+        self.assertEqual(analysis_02.state, "verified")
+        self.assertEqual(sample.state, "verified")
