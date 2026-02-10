@@ -42,7 +42,6 @@ class LimsAnalysis(models.Model):
         required=True,
         readonly=True,
         compute="_compute_name",
-        precompute=True,
         store=True,
     )
     analyst_id = fields.Many2one("res.users", readonly=True)
@@ -97,7 +96,7 @@ class LimsAnalysis(models.Model):
         product = self.env["product.product"].browse(defaults["product_id"])
         if "uom_id" not in values:
             defaults["uom_id"] = product.laboratory_uom_id.id
-        if values.get("name"):
+        if "name" not in values:
             defaults["name"] = product.name
         return defaults
 
@@ -117,7 +116,7 @@ class LimsAnalysis(models.Model):
             record.write(record._analyze_action_vals())
         # We need to use sudo as an analyst shouldn't be able to modify the sample,
         # but we want to trigger the check to verify which is based on analyses states
-        self.mapped("sample_id").sudo().check_to_verify()
+        self.mapped("sample_id").sudo()._check_analysis_state()
 
     def _analyze_action_vals(self):
         return {
@@ -133,7 +132,7 @@ class LimsAnalysis(models.Model):
             record.write(record._verify_action_vals())
         # We need to use sudo as a verifier shouldn't be able to modify the sample,
         # but we want to trigger the check verify which is based on analyses states
-        self.mapped("sample_id").sudo().check_verify()
+        self.mapped("sample_id").sudo()._check_analysis_state()
 
     def _verify_action_vals(self):
         return {
@@ -177,6 +176,9 @@ class LimsAnalysis(models.Model):
             )
         for record in self.filtered(lambda r: r.state == "to_be_verified"):
             record.write(record._retract_action_vals())
+        # We need to use sudo as a verifier shouldn't be able to modify the sample,
+        # but we want to trigger the check verify which is based on analyses states
+        self.mapped("sample_id").sudo()._check_analysis_state()
 
     def _retract_action_vals(self):
         return {

@@ -94,9 +94,13 @@ class LimsSample(models.Model):
             "received_date": fields.Datetime.now(),
         }
 
-    def check_to_verify(self):
+    def _check_analysis_state(self):
         for record in self:
-            if record._check_to_verify():
+            if record.state in ["registered", "scheduled_sampling", "due"]:
+                continue
+            if record._check_verify() and record.state != "verified":
+                record.write(record._check_verify_vals())
+            elif record.state != "to_be_verified" and record._check_to_verify():
                 record.write(record._check_to_verify_vals())
 
     def _check_to_verify(self):
@@ -108,11 +112,6 @@ class LimsSample(models.Model):
 
     def _check_to_verify_vals(self):
         return {"state": "to_be_verified"}
-
-    def check_verify(self):
-        for record in self:
-            if record._check_verify():
-                record.write(record._check_verify_vals())
 
     def _check_verify(self):
         return not any(

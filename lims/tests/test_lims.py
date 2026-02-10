@@ -1,6 +1,7 @@
 # Copyright 2026 Dixmit
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 
+from odoo.exceptions import AccessDenied
 from odoo.tests import new_test_user
 from odoo.tests.common import TransactionCase
 
@@ -39,6 +40,15 @@ class TestLims(TransactionCase):
             groups="lims.group_lims_analyst",
             company_id=cls.env.company.id,
         )
+        cls.analyst_verifier = new_test_user(
+            cls.env,
+            name="Because I am an analyst and a verifier",
+            login="analyst_verifier",
+            password="analyst_verifier",
+            email="analyst_verifier@test.com",
+            groups="lims.group_lims_analyst,lims.group_lims_verifier",
+            company_id=cls.env.company.id,
+        )
         cls.verifier = new_test_user(
             cls.env,
             name="Because I am a verifier",
@@ -63,6 +73,7 @@ class TestLims(TransactionCase):
                 "sample_type_id": self.sample_type.id,
             }
         )
+        self.assertEqual(sample.progress, 0)
         analysis_01 = self.env["lims.analysis"].create(
             {
                 "sample_id": sample.id,
@@ -75,6 +86,9 @@ class TestLims(TransactionCase):
                 "product_id": self.analyte_02.id,
             }
         )
+        self.assertEqual(sample.progress, 0)
+        self.assertEqual(analysis_01.progress, 0)
+        self.assertEqual(analysis_02.progress, 0)
         self.assertEqual(analysis_01.uom_id, self.analyte_01.laboratory_uom_id)
         self.assertEqual(analysis_02.uom_id, self.analyte_02.laboratory_uom_id)
         self.assertEqual(analysis_01.state, "registered")
@@ -84,6 +98,9 @@ class TestLims(TransactionCase):
         self.assertEqual(sample.state, "received")
         self.assertEqual(analysis_01.state, "to_analyze")
         self.assertEqual(analysis_02.state, "to_analyze")
+        self.assertEqual(sample.progress, 0)
+        self.assertEqual(analysis_01.progress, 0)
+        self.assertEqual(analysis_02.progress, 0)
         analysis_01.with_user(self.analyst.id).analyze_action()
         self.assertEqual(analysis_01.state, "to_be_verified")
         self.assertEqual(analysis_01.analyst_id, self.analyst)
@@ -92,12 +109,18 @@ class TestLims(TransactionCase):
         analysis_02.with_user(self.analyst.id).analyze_action()
         self.assertEqual(analysis_02.state, "to_be_verified")
         self.assertEqual(sample.state, "to_be_verified")
+        self.assertEqual(sample.progress, 50)
+        self.assertEqual(analysis_01.progress, 50)
+        self.assertEqual(analysis_02.progress, 50)
         analysis_01.with_user(self.verifier.id).verify_action()
         self.assertEqual(analysis_01.state, "verified")
         self.assertEqual(sample.state, "to_be_verified")
         analysis_02.with_user(self.verifier.id).verify_action()
         self.assertEqual(analysis_02.state, "verified")
         self.assertEqual(sample.state, "verified")
+        self.assertEqual(sample.progress, 100)
+        self.assertEqual(analysis_01.progress, 100)
+        self.assertEqual(analysis_02.progress, 100)
 
     def test_flow_02(self):
         """
@@ -134,6 +157,9 @@ class TestLims(TransactionCase):
         self.assertEqual(sample.state, "received")
         self.assertEqual(analysis_01.state, "to_analyze")
         self.assertEqual(analysis_02.state, "to_analyze")
+        self.assertEqual(sample.progress, 0)
+        self.assertEqual(analysis_01.progress, 0)
+        self.assertEqual(analysis_02.progress, 0)
         analysis_01.with_user(self.analyst.id).analyze_action()
         self.assertEqual(analysis_01.state, "to_be_verified")
         self.assertEqual(analysis_01.analyst_id, self.analyst)
@@ -142,9 +168,77 @@ class TestLims(TransactionCase):
         analysis_01.with_user(self.verifier.id).verify_action()
         self.assertEqual(analysis_01.state, "verified")
         self.assertEqual(sample.state, "received")
+        self.assertEqual(sample.progress, 50)
+        self.assertEqual(analysis_01.progress, 100)
+        self.assertEqual(analysis_02.progress, 0)
         analysis_02.with_user(self.analyst.id).analyze_action()
         self.assertEqual(analysis_02.state, "to_be_verified")
         self.assertEqual(sample.state, "to_be_verified")
         analysis_02.with_user(self.verifier.id).verify_action()
         self.assertEqual(analysis_02.state, "verified")
         self.assertEqual(sample.state, "verified")
+        self.assertEqual(sample.progress, 100)
+        self.assertEqual(analysis_01.progress, 100)
+        self.assertEqual(analysis_02.progress, 100)
+
+    def test_permissions(self):
+        """
+        Lims Sample with 1 analyte
+        - Create sample with 1 analysis
+        - Try to analyze and verify with a user that is analyzer and verifier
+        - Analyze and verify with the correct users
+        """
+        sample = self.env["lims.sample"].create(
+            {
+                "external_identifier": "Sample 01",
+                "sample_type_id": self.sample_type.id,
+            }
+        )
+        analysis = self.env["lims.analysis"].create(
+            {
+                "sample_id": sample.id,
+                "product_id": self.analyte_01.id,
+            }
+        )
+        sample.receive_sample_action()
+        with self.assertRaises(AccessDenied):
+            analysis.with_user(self.verifier.id).analyze_action()
+        analysis.with_user(self.analyst_verifier.id).analyze_action()
+        self.assertEqual(analysis.state, "to_be_verified")
+        analysis.with_user(self.analyst_verifier.id).verify_action()
+        # We try to verify, but the system does nothing as the analyst can't verify it
+        self.assertEqual(analysis.state, "to_be_verified")
+        with self.assertRaises(AccessDenied):
+            analysis.with_user(self.analyst.id).verify_action()
+        # We try to retract, but the system does nothing as the analyst can't retract it
+        with self.assertRaises(AccessDenied):
+            analysis.with_user(self.analyst.id).retract_action()
+        analysis.with_user(self.verifier.id).verify_action()
+        self.assertEqual(analysis.state, "verified")
+
+    def test_retraction(self):
+        """
+        Lims Sample with 1 analyte
+        - Create sample with 1 analysis
+        - Receive sample
+        - Analyze the analysis
+        - Retract the sample and check that the analysis is also retracted
+        """
+        sample = self.env["lims.sample"].create(
+            {
+                "external_identifier": "Sample 01",
+                "sample_type_id": self.sample_type.id,
+            }
+        )
+        analysis = self.env["lims.analysis"].create(
+            {
+                "sample_id": sample.id,
+                "product_id": self.analyte_01.id,
+            }
+        )
+        sample.receive_sample_action()
+        analysis.with_user(self.analyst.id).analyze_action()
+        self.assertEqual(analysis.state, "to_be_verified")
+        self.assertEqual(sample.state, "to_be_verified")
+        analysis.with_user(self.verifier.id).retract_action()
+        self.assertEqual(analysis.state, "to_analyze")
