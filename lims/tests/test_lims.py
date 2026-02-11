@@ -1,5 +1,5 @@
 # Copyright 2026 Dixmit
-# License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
+# License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl).
 
 from odoo.exceptions import AccessDenied
 from odoo.tests import new_test_user
@@ -10,20 +10,18 @@ class TestLims(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.analyte_01 = cls.env["product.product"].create(
+        cls.analyte_01 = cls.env["lims.analyte"].create(
             {
                 "name": "Analyte 01",
-                "type": "service",
-                "service_tracking": "laboratory",
-                "laboratory_uom_id": cls.env.ref("uom.product_uom_unit").id,
+                "code": "AN01",
+                "uom_id": cls.env.ref("uom.product_uom_unit").id,
             }
         )
-        cls.analyte_02 = cls.env["product.product"].create(
+        cls.analyte_02 = cls.env["lims.analyte"].create(
             {
                 "name": "Analyte 02",
-                "type": "service",
-                "service_tracking": "laboratory",
-                "laboratory_uom_id": cls.env.ref("uom.product_uom_millimeter").id,
+                "code": "AN02",
+                "uom_id": cls.env.ref("uom.product_uom_millimeter").id,
             }
         )
         cls.sample_type = cls.env["lims.sample.type"].create(
@@ -77,20 +75,20 @@ class TestLims(TransactionCase):
         analysis_01 = self.env["lims.analysis"].create(
             {
                 "sample_id": sample.id,
-                "product_id": self.analyte_01.id,
+                "analyte_id": self.analyte_01.id,
             }
         )
         analysis_02 = self.env["lims.analysis"].create(
             {
                 "sample_id": sample.id,
-                "product_id": self.analyte_02.id,
+                "analyte_id": self.analyte_02.id,
             }
         )
         self.assertEqual(sample.progress, 0)
         self.assertEqual(analysis_01.progress, 0)
         self.assertEqual(analysis_02.progress, 0)
-        self.assertEqual(analysis_01.uom_id, self.analyte_01.laboratory_uom_id)
-        self.assertEqual(analysis_02.uom_id, self.analyte_02.laboratory_uom_id)
+        self.assertEqual(analysis_01.uom_id, self.analyte_01.uom_id)
+        self.assertEqual(analysis_02.uom_id, self.analyte_02.uom_id)
         self.assertEqual(analysis_01.state, "registered")
         self.assertEqual(analysis_02.state, "registered")
         self.assertEqual(sample.state, "due")
@@ -139,17 +137,17 @@ class TestLims(TransactionCase):
         analysis_01 = self.env["lims.analysis"].create(
             {
                 "sample_id": sample.id,
-                "product_id": self.analyte_01.id,
+                "analyte_id": self.analyte_01.id,
             }
         )
         analysis_02 = self.env["lims.analysis"].create(
             {
                 "sample_id": sample.id,
-                "product_id": self.analyte_02.id,
+                "analyte_id": self.analyte_02.id,
             }
         )
-        self.assertEqual(analysis_01.uom_id, self.analyte_01.laboratory_uom_id)
-        self.assertEqual(analysis_02.uom_id, self.analyte_02.laboratory_uom_id)
+        self.assertEqual(analysis_01.uom_id, self.analyte_01.uom_id)
+        self.assertEqual(analysis_02.uom_id, self.analyte_02.uom_id)
         self.assertEqual(analysis_01.state, "registered")
         self.assertEqual(analysis_02.state, "registered")
         self.assertEqual(sample.state, "due")
@@ -197,7 +195,7 @@ class TestLims(TransactionCase):
         analysis = self.env["lims.analysis"].create(
             {
                 "sample_id": sample.id,
-                "product_id": self.analyte_01.id,
+                "analyte_id": self.analyte_01.id,
             }
         )
         sample.receive_sample_action()
@@ -233,7 +231,7 @@ class TestLims(TransactionCase):
         analysis = self.env["lims.analysis"].create(
             {
                 "sample_id": sample.id,
-                "product_id": self.analyte_01.id,
+                "analyte_id": self.analyte_01.id,
             }
         )
         sample.receive_sample_action()

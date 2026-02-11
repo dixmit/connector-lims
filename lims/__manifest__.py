@@ -14,11 +14,23 @@
         "security/security.xml",
         "security/ir.model.access.csv",
         "data/ir_sequence_data.xml",
+        "data/uom_data.xml",
         "views/menu.xml",
+        "views/lims_analyte.xml",
         "views/lims_sample_type.xml",
         "views/lims_sample.xml",
         "views/lims_analysis.xml",
         "views/product_template.xml",
     ],
     "demo": ["demo/demo.xml"],
+    "assets": {
+        "web.assets_backend": [
+            "lims/static/src/**/*.esm.js",
+            "lims/static/src/**/*.xml",
+            "lims/static/src/**/*.scss",
+        ],
+        "web.assets_unit_tests": [
+            "lims/static/tests/**/*",
+        ],
+    },
 }

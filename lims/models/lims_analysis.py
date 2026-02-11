@@ -32,10 +32,9 @@ class LimsAnalysis(models.Model):
         default="registered",
         readonly=True,
     )
-    product_id = fields.Many2one(
-        "product.product",
+    analyte_id = fields.Many2one(
+        "lims.analyte",
         required=True,
-        domain=[("service_tracking", "=", "laboratory")],
         readonly=True,
     )
     name = fields.Char(
@@ -58,22 +57,29 @@ class LimsAnalysis(models.Model):
     )
     progress = fields.Float(compute="_compute_progress", store=True)
     can_verify = fields.Boolean(compute="_compute_can_verify")
-    value = fields.Char(
+    value = fields.Json(
         readonly=True,
+        compute="_compute_value",
+        store=True,
     )
     _identifier_unique = models.Constraint(
         "unique(identifier, company_id)", "Analysis identifier must be unique"
     )
 
-    @api.depends("product_id")
+    @api.depends("analyte_id")
     def _compute_name(self):
         for record in self:
-            record.name = record.product_id.name
+            record.name = record.analyte_id.name
 
-    @api.depends("product_id")
+    @api.depends("analyte_id")
+    def _compute_value(self):
+        for record in self:
+            record.value = record.analyte_id._get_default_value()
+
+    @api.depends("analyte_id")
     def _compute_uom_id(self):
         for record in self:
-            record.uom_id = record.product_id.laboratory_uom_id
+            record.uom_id = record.analyte_id.uom_id
 
     @api.model_create_multi
     def create(self, mvals):
@@ -93,11 +99,11 @@ class LimsAnalysis(models.Model):
     @api.model
     def _add_missing_default_values(self, values):
         defaults = super()._add_missing_default_values(values)
-        product = self.env["product.product"].browse(defaults["product_id"])
+        analyte = self.env["lims.analyte"].browse(defaults["analyte_id"])
         if "uom_id" not in values:
-            defaults["uom_id"] = product.laboratory_uom_id.id
+            defaults["uom_id"] = analyte.uom_id.id
         if "name" not in values:
-            defaults["name"] = product.name
+            defaults["name"] = analyte.name
         return defaults
 
     def _receive_sample(self):
@@ -166,7 +172,9 @@ class LimsAnalysis(models.Model):
         ) and self.env.user.has_group("lims.group_lims_manager")
         for record in self:
             record.can_verify = record.state == "to_be_verified" and (
-                verify_param or record.analyst_id != self.env.user
+                verify_param
+                or record.analyst_id != self.env.user
+                or record.analyte_id.autoverify
             )
 
     def retract_action(self):

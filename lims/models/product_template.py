@@ -8,6 +8,7 @@ class ProductTemplate(models.Model):
     _inherit = "product.template"
 
     laboratory_uom_id = fields.Many2one("uom.uom")
+    sample_type_ids = fields.Many2many("lims.sample.type")
     service_tracking = fields.Selection(
         selection_add=[
             ("laboratory", "Laboratory"),

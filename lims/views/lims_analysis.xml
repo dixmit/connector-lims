@@ -41,13 +41,16 @@
             <list editable="bottom">
                 <field name="identifier" column_invisible="1" />
                 <field
-                    name="product_id"
-                    context="{'default_service_tracking': 'laboratory', 'default_sale_ok':False, 'default_purchase_ok':False, 'default_type':'service'}"
-                    options="{'no_quick_create': true}"
+                    name="analyte_id"
+                    options="{'no_create': true}"
                     readonly="state!='registered'"
                 />
                 <field name="name" readonly="state!='registered'" />
-                <field name="value" readonly="state!='to_analyze'" />
+                <field
+                    name="value"
+                    readonly="state!='to_analyze'"
+                    widget="laboratory_value"
+                />
                 <field name="uom_id" readonly="state!='registered'" />
                 <field name="state" force_save="1" />
                 <field name="progress" widget="progressbar" />
@@ -83,6 +86,7 @@
         <field name="name">Analysis</field>
         <field name="res_model">lims.analysis</field>
         <field name="view_mode">list,form</field>
+        <field name="path">lims_analysis</field>
         <field name="domain">[]</field>
         <field name="context">{}</field>
     </record>

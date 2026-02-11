@@ -12,6 +12,12 @@
             </field>
             <field name="service_tracking" position="after">
                 <field
+                    name="sample_type_ids"
+                    widget="many2many_tags"
+                    options="{'no_create': True}"
+                    invisible="not service_tracking == 'laboratory'"
+                />
+                <field
                     name="laboratory_uom_id"
                     invisible="not service_tracking == 'laboratory'"
                     required="service_tracking == 'laboratory'"
