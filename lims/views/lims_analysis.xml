@@ -51,6 +51,7 @@
                     readonly="state!='to_analyze'"
                     widget="laboratory_value"
                 />
+                <field name="value_state" widget="laboratory_evaluation" />
                 <field name="uom_id" readonly="state!='registered'" />
                 <field name="state" force_save="1" />
                 <field name="progress" widget="progressbar" />

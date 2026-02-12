@@ -1,3 +1,6 @@
+// Copyright 2026 Dixmit
+// License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl).
+
 const {Component, useEffect, useRef, useState} = owl;
 
 import {areDatesEqual, parseDate, parseDateTime} from "@web/core/l10n/dates";

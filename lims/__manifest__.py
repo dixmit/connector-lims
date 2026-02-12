@@ -9,7 +9,7 @@
     "license": "LGPL-3",
     "author": "Dixmit, Creu Blanca,Odoo Community Association (OCA)",
     "website": "https://github.com/OCA/connector-lims",
-    "depends": ["mail"],
+    "depends": ["mail", "uom"],
     "data": [
         "security/security.xml",
         "security/ir.model.access.csv",

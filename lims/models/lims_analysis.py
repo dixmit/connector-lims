@@ -62,6 +62,17 @@ class LimsAnalysis(models.Model):
         compute="_compute_value",
         store=True,
     )
+    value_state = fields.Selection(
+        [
+            ("valid", "Valid"),
+            ("min", "Minimum"),
+            ("max", "Maximum"),
+            ("min_warning", "Minimum Warning"),
+            ("max_warning", "Maximum Warning"),
+        ],
+        compute="_compute_value_state",
+        store=True,
+    )
     _identifier_unique = models.Constraint(
         "unique(identifier, company_id)", "Analysis identifier must be unique"
     )
@@ -74,12 +85,55 @@ class LimsAnalysis(models.Model):
     @api.depends("analyte_id")
     def _compute_value(self):
         for record in self:
-            record.value = record.analyte_id._get_default_value()
+            record.value = record.analyte_id._get_default_value(
+                record.sample_id.sample_type_id
+            )
 
     @api.depends("analyte_id")
     def _compute_uom_id(self):
         for record in self:
             record.uom_id = record.analyte_id.uom_id
+
+    @api.depends("value")
+    def _compute_value_state(self):
+        for record in self:
+            record.value_state = record._get_value_state()
+
+    def _get_value_state(self):
+        if not self.value:
+            return False
+        if self.value.get("result_type") != "float":
+            return False
+        if not self.value.get("min_operator") and not self.value.get("max_operator"):
+            return False
+        value = self.value.get("value", 0.0)
+        if self.value.get("min_operator") and self._get_value_evaluation(
+            self.value["min_operator"], value, self.value.get("min", 0.0)
+        ):
+            return "min"
+        if self.value.get("max_operator") and self._get_value_evaluation(
+            self.value["max_operator"], value, self.value.get("max", 0.0)
+        ):
+            return "max"
+        if self.value.get("min_operator") and self._get_value_evaluation(
+            self.value["min_operator"], value, self.value.get("min_warning", 0.0)
+        ):
+            return "min_warning"
+        if self.value.get("max_operator") and self._get_value_evaluation(
+            self.value["max_operator"], value, self.value.get("max_warning", 0.0)
+        ):
+            return "max_warning"
+        return "valid"
+
+    def _get_value_evaluation(self, operator, value, warning):
+        if operator == "lt":
+            return value < warning
+        if operator == "le":
+            return value <= warning
+        if operator == "gt":
+            return value > warning
+        if operator == "ge":
+            return value >= warning
 
     @api.model_create_multi
     def create(self, mvals):

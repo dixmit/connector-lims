@@ -47,7 +47,7 @@ class LimsAnalyte(models.Model):
     option_ids = fields.One2many("lims.analyte.option", inverse_name="analyte_id")
     _code_unique = models.Constraint("unique(code)", "Code must be unique.")
 
-    def _get_default_value(self):
+    def _get_default_value(self, sample_type):
         if not self:
             return {}
         self.ensure_one()
@@ -60,6 +60,17 @@ class LimsAnalyte(models.Model):
             value["value"] = {option.value: False for option in self.option_ids}
         if self.result_type == "float":
             value["digits"] = self.precision_digits
+            specs = self.specification_ids.filtered(
+                lambda s: s.sample_type_id == sample_type
+            )
+            if specs and specs.min_operator:
+                value["min"] = specs.min_value
+                value["min_warning"] = specs.min_warning_value
+                value["min_operator"] = specs.min_operator
+            if specs and specs.max_operator:
+                value["max"] = specs.max_value
+                value["max_warning"] = specs.max_warning_value
+                value["max_operator"] = specs.max_operator
         return value
 
 
