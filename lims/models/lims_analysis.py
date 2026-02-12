@@ -32,9 +32,20 @@ class LimsAnalysis(models.Model):
         default="registered",
         readonly=True,
     )
+    sequence = fields.Integer(
+        default=10,
+    )
+    display_type = fields.Selection(
+        [
+            ("analyte", "Analyte"),
+            ("line_section", "Section"),
+            ("line_subsection", "Subsection"),
+            ("line_note", "Note"),
+        ],
+        default="analyte",
+    )
     analyte_id = fields.Many2one(
         "lims.analyte",
-        required=True,
         readonly=True,
     )
     name = fields.Char(
@@ -80,7 +91,8 @@ class LimsAnalysis(models.Model):
     @api.depends("analyte_id")
     def _compute_name(self):
         for record in self:
-            record.name = record.analyte_id.name
+            if record.analyte_id:
+                record.name = record.analyte_id.name
 
     @api.depends("analyte_id")
     def _compute_value(self):

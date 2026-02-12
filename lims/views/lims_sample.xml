@@ -42,13 +42,14 @@
                         <page name="analysis" string="Analysis">
                             <field
                                 name="analysis_ids"
+                                widget="section_and_note_one2many"
                                 invisible="state not in ['registered', 'scheduled_sampling', 'due']"
-                                context="{
-                                        'list_view_ref': 'lims.lims_analysis_list_creation_view',
-                                    }"
+                                context="{'list_view_ref': 'lims.lims_analysis_list_creation_view'}"
                             />
                             <field
                                 name="analysis_ids"
+                                widget="section_and_note_one2many"
+                                context="{'list_view_ref': 'lims.lims_analysis_list_view'}"
                                 invisible="state in ['registered', 'scheduled_sampling', 'due']"
                             />
                         </page>
@@ -79,7 +80,6 @@
         <field name="model">lims.sample</field>
         <field name="arch" type="xml">
             <list>
-                <!-- TODO -->
                 <field name="identifier" />
                 <field name="sample_type_id" />
                 <field name="sample_date" />

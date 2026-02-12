@@ -9,7 +9,9 @@
     "license": "LGPL-3",
     "author": "Dixmit, Creu Blanca,Odoo Community Association (OCA)",
     "website": "https://github.com/OCA/connector-lims",
-    "depends": ["mail", "uom"],
+    "depends": ["mail", "uom", "account"],
+    # Account is needed to add subsections...
+    # things that you cannot understand from odoo...
     "data": [
         "security/security.xml",
         "security/ir.model.access.csv",
