@@ -40,7 +40,17 @@
                     </group>
                     <notebook>
                         <page name="analysis" string="Analysis">
-                            <field name="analysis_ids" />
+                            <field
+                                name="analysis_ids"
+                                invisible="state not in ['registered', 'scheduled_sampling', 'due']"
+                                context="{
+                                        'list_view_ref': 'lims.lims_analysis_list_creation_view',
+                                    }"
+                            />
+                            <field
+                                name="analysis_ids"
+                                invisible="state in ['registered', 'scheduled_sampling', 'due']"
+                            />
                         </page>
                         <page name="interpretation" string="Interpretation">
                             <field name="interpretation" />

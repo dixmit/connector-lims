@@ -248,3 +248,7 @@ class LimsAnalysis(models.Model):
             "analyst_id": False,
             "submitted_date": False,
         }
+
+    def reject_action(self):
+        self.write({"state": "rejected"})
+        self.mapped("sample_id").sudo()._check_analysis_state()

@@ -34,9 +34,10 @@
             </search>
         </field>
     </record>
-    <record model="ir.ui.view" id="lims_analysis_list_view">
+    <record model="ir.ui.view" id="lims_analysis_list_creation_view">
         <field name="name">lims.analysis.list (in lims)</field>
         <field name="model">lims.analysis</field>
+        <field name="priority" eval="99" />
         <field name="arch" type="xml">
             <list editable="bottom">
                 <field name="identifier" column_invisible="1" />
@@ -46,15 +47,8 @@
                     readonly="state!='registered'"
                 />
                 <field name="name" readonly="state!='registered'" />
-                <field
-                    name="value"
-                    readonly="state!='to_analyze'"
-                    widget="laboratory_value"
-                />
-                <field name="value_state" widget="laboratory_evaluation" />
-                <field name="uom_id" readonly="state!='registered'" />
-                <field name="state" force_save="1" />
-                <field name="progress" widget="progressbar" />
+                <field name="state" force_save="1" optional="hide" />
+                <field name="progress" widget="progressbar" optional="hide" />
                 <field name="can_verify" column_invisible="1" />
                 <button
                     name="analyze_action"
@@ -80,7 +74,42 @@
                     icon="fa-undo"
                     invisible="state != 'to_be_verified'"
                 />
+                <button
+                    name="reject_action"
+                    groups="lims.group_lims_verifier"
+                    type="object"
+                    title="Reject"
+                    icon="fa-times"
+                    invisible="state not in ['rejected', 'verified']"
+                />
             </list>
+        </field>
+    </record>
+    <record model="ir.ui.view" id="lims_analysis_list_view">
+        <field name="name">lims.analysis.list (in lims)</field>
+        <field name="model">lims.analysis</field>
+        <field name="inherit_id" ref="lims_analysis_list_creation_view" />
+        <field name="priority" eval="16" />
+        <field name="mode">primary</field>
+        <field name="arch" type="xml">
+            <list position="attributes">
+                <attribute name="create">false</attribute>
+                <attribute name="delete">false</attribute>
+            </list>
+            <field name="name" position="after">
+                <field
+                    name="value"
+                    readonly="state!='to_analyze'"
+                    widget="laboratory_value"
+                />
+                <field name="uom_id" readonly="state!='registered'" />
+                <field
+                    name="value_state"
+                    string="Evaluation"
+                    widget="laboratory_evaluation"
+                    optional="show"
+                />
+            </field>
         </field>
     </record>
     <record model="ir.actions.act_window" id="lims_analysis_act_window">
