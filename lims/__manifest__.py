@@ -22,6 +22,7 @@
         "views/lims_sample_type.xml",
         "views/lims_sample.xml",
         "views/lims_analysis.xml",
+        "reports/lims_sample_report.xml",
     ],
     "demo": ["demo/demo.xml"],
     "assets": {
@@ -32,6 +33,9 @@
         ],
         "web.assets_unit_tests": [
             "lims/static/tests/**/*",
+        ],
+        "web.report_assets_common": [
+            "lims/static/src/report.scss",
         ],
     },
 }

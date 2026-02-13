@@ -19,6 +19,7 @@ class LimsAnalyte(models.Model):
     name = fields.Char(required=True, translate=True)
     code = fields.Char(required=True)
     description = fields.Html(translate=True)
+    active = fields.Boolean(default=True)
     uom_id = fields.Many2one("uom.uom")
     specification_ids = fields.One2many("lims.analyte.specs", inverse_name="analyte_id")
     result_type = fields.Selection(
@@ -90,9 +91,9 @@ class LimsAnalyteSpecs(models.Model):
 
     analyte_id = fields.Many2one("lims.analyte", required=True)
     sample_type_id = fields.Many2one("lims.sample.type", required=True)
-    min_operator = fields.Selection(OPERATORS)
+    min_operator = fields.Selection(OPERATORS, default="lt")
     min_value = fields.Float()
     min_warning_value = fields.Float()
     max_value = fields.Float()
     max_warning_value = fields.Float()
-    max_operator = fields.Selection(OPERATORS)
+    max_operator = fields.Selection(OPERATORS, default="gt")

@@ -8,13 +8,8 @@
             font-family: "FontAwesome";
             font-weight: 900;
         }
-        li & {
-            .selected:before {
-                content: "\f046";
-            }
+        li.selected:before {
+            content: "\f046";
         }
-    }
-    .o_lims_laboratory_value_text {
-        white-space: pre-wrap;
     }
 }

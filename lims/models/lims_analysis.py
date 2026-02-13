@@ -3,6 +3,7 @@
 
 from odoo import api, fields, models
 from odoo.exceptions import AccessDenied
+from odoo.tools import format_date, format_datetime
 
 
 class LimsAnalysis(models.Model):
@@ -165,7 +166,7 @@ class LimsAnalysis(models.Model):
     @api.model
     def _add_missing_default_values(self, values):
         defaults = super()._add_missing_default_values(values)
-        analyte = self.env["lims.analyte"].browse(defaults["analyte_id"])
+        analyte = self.env["lims.analyte"].browse(defaults.get("analyte_id")).exists()
         if "uom_id" not in values:
             defaults["uom_id"] = analyte.uom_id.id
         if "name" not in values:
@@ -248,7 +249,9 @@ class LimsAnalysis(models.Model):
             raise AccessDenied(
                 self.env._("You are not allowed to retract an analysis to be verified")
             )
-        for record in self.filtered(lambda r: r.state == "to_be_verified"):
+        for record in self.filtered(
+            lambda r: r.state in ["to_be_verified", "rejected"]
+        ):
             record.write(record._retract_action_vals())
         # We need to use sudo as a verifier shouldn't be able to modify the sample,
         # but we want to trigger the check verify which is based on analyses states
@@ -264,3 +267,53 @@ class LimsAnalysis(models.Model):
     def reject_action(self):
         self.write({"state": "rejected"})
         self.mapped("sample_id").sudo()._check_analysis_state()
+
+    def _get_report_value(self):
+        self.ensure_one()
+        if self.value["result_type"] == "float":
+            lang = self.env["res.lang"]._lang_get(
+                self.env.context.get("lang") or self.env.user.lang
+            )
+            return lang.format(
+                f"%.{self.value.get('digits')}f", self.value.get("value"), grouping=True
+            )
+        if self.value["result_type"] == "date" and self.value.get("value"):
+            return format_date(self.env, fields.Date.to_date(self.value.get("value")))
+        if self.value["result_type"] == "datetime" and self.value.get("value"):
+            return format_datetime(
+                self.env, fields.Datetime.to_datetime(self.value.get("value"))
+            )
+        if self.value["result_type"] == "multiselection":
+            return ", ".join(self.value.get("value", []))
+        return self.value.get("value")
+
+    def _get_reference_value(self):
+        self.ensure_one()
+        if self.value["result_type"] != "float":
+            return ""
+        value = []
+        lang = self.env["res.lang"]._lang_get(
+            self.env.context.get("lang") or self.env.user.lang
+        )
+        if self.value.get("min_operator"):
+            value.append(
+                lang.format(
+                    f"%.{self.value.get('digits')}f",
+                    self.value.get("min_warning"),
+                    grouping=True,
+                )
+            )
+        if self.value.get("max_operator"):
+            value.append(
+                lang.format(
+                    f"%.{self.value.get('digits')}f",
+                    self.value.get("max_warning"),
+                    grouping=True,
+                )
+            )
+        if not value:
+            return ""
+        result = self.env._("RV: ") + ("/".join(value))
+        if self.uom_id:
+            result += f" {self.uom_id.name}"
+        return result

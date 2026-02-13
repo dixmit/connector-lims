@@ -21,7 +21,6 @@ class LimsSample(models.Model):
             ("received", "Received"),
             ("to_be_verified", "To be verified"),
             ("verified", "Verified"),
-            ("published", "Published"),
             ("cancelled", "Cancelled"),
             ("invalid", "Invalid"),
         ],
@@ -42,8 +41,8 @@ class LimsSample(models.Model):
         tracking=True,
     )
     received_date = fields.Datetime(readonly=True)
-    published_date = fields.Datetime(readonly=True)
-    customer_id = fields.Many2one("res.partner", tracking=True)
+    verification_date = fields.Datetime(readonly=True)
+    partner_id = fields.Many2one("res.partner", tracking=True)
     company_id = fields.Many2one(
         "res.company", default=lambda self: self.env.company.id, tracking=True
     )
@@ -98,30 +97,32 @@ class LimsSample(models.Model):
         for record in self:
             if record.state in ["registered", "scheduled_sampling", "due"]:
                 continue
-            if record._check_verify() and record.state != "verified":
-                record.write(record._check_verify_vals())
-            elif record.state != "to_be_verified" and record._check_to_verify():
-                record.write(record._check_to_verify_vals())
+            if record._check_verify():
+                if record.state != "verified":
+                    record.write(record._check_verify_vals())
+            elif record._check_to_verify():
+                if record.state != "to_be_verified":
+                    record.write(record._check_to_verify_vals())
+            else:
+                record.write({"state": "received"})
 
     def _check_to_verify(self):
-        return not any(
-            self.analysis_ids.filtered(
-                lambda r: r.state in ["registered", "to_analyze"]
-            )
+        return not self.analysis_ids.filtered(
+            lambda r: r.state in ["registered", "to_analyze"]
+            and r.display_type == "analyte"
         )
 
     def _check_to_verify_vals(self):
         return {"state": "to_be_verified"}
 
     def _check_verify(self):
-        return not any(
-            self.analysis_ids.filtered(
-                lambda r: r.state in ["registered", "to_analyze", "to_be_verified"]
-            )
+        return not self.analysis_ids.filtered(
+            lambda r: r.state in ["registered", "to_analyze", "to_be_verified"]
+            and r.display_type == "analyte"
         )
 
     def _check_verify_vals(self):
-        return {"state": "verified"}
+        return {"state": "verified", "verification_date": fields.Datetime.now()}
 
     @api.depends("analysis_ids", "analysis_ids.progress")
     def _compute_progress(self):
@@ -129,7 +130,9 @@ class LimsSample(models.Model):
             record.progress = record._get_progress()
 
     def get_analysis(self):
-        return self.analysis_ids.filtered(lambda r: r.state not in ["invalid"])
+        return self.analysis_ids.filtered(
+            lambda r: r.state not in ["invalid"] and r.display_type == "analyte"
+        )
 
     def _get_progress(self):
         analysis = self.get_analysis()

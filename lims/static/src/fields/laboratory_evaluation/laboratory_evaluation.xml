@@ -4,10 +4,7 @@
      License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl). -->
     <t t-name="lims.LaboratoryEvaluationField" owl="1">
         <div>
-            <span class="fa fa-stack o_stack text-success" t-if="value === 'valid'">
-                <i class="fa fa-window-minimize fa-stack-1x fa-flip-vertical" />
-                <i class="fa fa-window-minimize fa-stack-1x" />
-            </span>
+            <span class="text-success fw-bold" t-if="value === 'valid'">=</span>
             <i class="fa fa-angle-down text-warning" t-elif="value === 'min_warning'" />
             <i class="fa fa-angle-double-down text-danger" t-elif="value === 'min'" />
             <i class="fa fa-angle-up text-warning" t-elif="value === 'max_warning'" />

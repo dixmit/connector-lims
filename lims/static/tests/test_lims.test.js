@@ -48,7 +48,7 @@ class TestLine extends models.Model {
         {
             id: 6,
             value: {
-                value: "2024-06-01T02:00:00.000Z",
+                value: "2024-06-01 02:00:00",
                 result_type: "datetime",
             },
         },

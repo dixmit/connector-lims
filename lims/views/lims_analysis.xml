@@ -133,7 +133,7 @@
                     type="object"
                     title="Retract"
                     icon="fa-undo"
-                    invisible="state != 'to_be_verified'"
+                    invisible="state not in ['to_be_verified', 'rejected']"
                 />
                 <button
                     name="reject_action"

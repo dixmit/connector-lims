@@ -3,7 +3,15 @@
 
 const {Component, useEffect, useRef, useState} = owl;
 
-import {areDatesEqual, parseDate, parseDateTime} from "@web/core/l10n/dates";
+import {
+    areDatesEqual,
+    deserializeDate,
+    deserializeDateTime,
+    parseDate,
+    parseDateTime,
+    serializeDate,
+    serializeDateTime,
+} from "@web/core/l10n/dates";
 import {formatDate, formatDateTime, formatFloat} from "@web/views/fields/formatters";
 
 import {CheckBox} from "@web/core/checkbox/checkbox";
@@ -50,8 +58,14 @@ export class LaboratoryValueField extends Component {
         ) {
             const getPickerProps = () => {
                 var value = this.props.record.data[this.props.name].value;
-                if (value) {
-                    value = luxon.DateTime.fromISO(value);
+                if (value && typeof value === "string") {
+                    if (
+                        this.props.record.data[this.props.name].result_type === "date"
+                    ) {
+                        value = deserializeDate(value);
+                    } else {
+                        value = deserializeDateTime(value);
+                    }
                 }
                 /** @type {DateTimePickerProps} */
                 const pickerProps = {
@@ -73,17 +87,28 @@ export class LaboratoryValueField extends Component {
                 },
                 onClose: () => {
                     this.picker.activeInput = "";
-                    this.state.value = luxon.DateTime.fromISO(
+                    this.state.value = deserializeDateTime(
                         this.props.record.data[this.props.name].value
                     );
                 },
                 onApply: async () => {
-                    await this.props.record.update({
-                        [this.props.name]: {
-                            ...this.props.record.data[this.props.name],
-                            value: this.state.value,
-                        },
-                    });
+                    if (
+                        this.props.record.data[this.props.name].result_type === "date"
+                    ) {
+                        await this.props.record.update({
+                            [this.props.name]: {
+                                ...this.props.record.data[this.props.name],
+                                value: serializeDate(this.state.value),
+                            },
+                        });
+                    } else {
+                        await this.props.record.update({
+                            [this.props.name]: {
+                                ...this.props.record.data[this.props.name],
+                                value: serializeDateTime(this.state.value),
+                            },
+                        });
+                    }
                 },
             });
             this.state = useState(dateTimePicker.state);
@@ -138,10 +163,10 @@ export class LaboratoryValueField extends Component {
         }
 
         if (this.type === "date" && data.value) {
-            return formatDate(luxon.DateTime.fromISO(data.value), {numeric: true});
+            return formatDate(deserializeDate(data.value), {numeric: true});
         }
         if (this.type === "datetime" && data.value) {
-            return formatDateTime(luxon.DateTime.fromISO(data.value), {numeric: true});
+            return formatDateTime(deserializeDateTime(data.value), {numeric: true});
         }
         return data.value || "";
     }
@@ -166,11 +191,11 @@ export class LaboratoryValueField extends Component {
     get formattedDate() {
         var formattedValue = false;
         if (this.state.value && this.type === "date") {
-            formattedValue = formatDate(luxon.DateTime.fromISO(this.state.value), {
+            formattedValue = formatDate(this.state.value, {
                 numeric: true,
             });
         } else if (this.state.value && this.type === "datetime") {
-            formattedValue = formatDateTime(luxon.DateTime.fromISO(this.state.value), {
+            formattedValue = formatDateTime(this.state.value, {
                 numeric: true,
             });
         }
@@ -188,15 +213,21 @@ export class LaboratoryValueField extends Component {
         }
         if (this.type === "date") {
             this.state.value = parseDate(value);
+            await this.props.record.update({
+                [this.props.name]: {
+                    ...this.props.record.data[this.props.name],
+                    value: serializeDate(this.state.value),
+                },
+            });
         } else if (this.type === "datetime") {
             this.state.value = parseDateTime(value);
+            await this.props.record.update({
+                [this.props.name]: {
+                    ...this.props.record.data[this.props.name],
+                    value: serializeDateTime(this.state.value),
+                },
+            });
         }
-        await this.props.record.update({
-            [this.props.name]: {
-                ...this.props.record.data[this.props.name],
-                value: this.state.value,
-            },
-        });
     }
     onChangeMultiSelectionCheck(value) {
         this.props.record.update({
