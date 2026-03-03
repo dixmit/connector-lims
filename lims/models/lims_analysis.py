@@ -85,9 +85,11 @@ class LimsAnalysis(models.Model):
         compute="_compute_value_state",
         store=True,
     )
-    _identifier_unique = models.Constraint(
-        "unique(identifier, company_id)", "Analysis identifier must be unique"
-    )
+    _sql_constraints = [
+        ("sample_analyte_unique",
+         "UNIQUE(sample_id, analyte_id)",
+         "An analyte can only be analyzed once per sample."),
+    ]
 
     @api.depends("analyte_id")
     def _compute_name(self):

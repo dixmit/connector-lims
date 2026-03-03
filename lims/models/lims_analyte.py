@@ -46,7 +46,9 @@ class LimsAnalyte(models.Model):
         default=2,
     )
     option_ids = fields.One2many("lims.analyte.option", inverse_name="analyte_id")
-    _code_unique = models.Constraint("unique(code)", "Code must be unique.")
+    _sql_constraints = [
+        ("code_unique", "UNIQUE(code)", "Code must be unique."),
+    ]
 
     def _get_default_value(self, sample_type):
         if not self:

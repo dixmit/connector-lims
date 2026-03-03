@@ -4,7 +4,6 @@
 <odoo noupdate="1">
     <record model="res.partner" id="lims_demo_laboratory">
         <field name="name">Demo Laboratory</field>
-        <field name="is_laboratory" eval="True" />
         <field name="parent_id" ref="base.main_partner" />
     </record>
     <record model="lims.sample.type" id="lims_water_sample_type">

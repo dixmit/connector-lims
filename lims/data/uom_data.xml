@@ -6,7 +6,9 @@
 <odoo noupdate="1">
     <record id="product_uom_mg" model="uom.uom">
         <field name="name">mg</field>
-        <field name="relative_factor" eval="0.001" />
-        <field name="relative_uom_id" ref="uom.product_uom_gram" />
+        <field name="factor" eval="1000000" />
+        <field name="category_id" ref="uom.product_uom_categ_kgm"/>
+        <field name="factor" eval="1000"/>
+        <field name="uom_type">smaller</field>
     </record>
 </odoo>

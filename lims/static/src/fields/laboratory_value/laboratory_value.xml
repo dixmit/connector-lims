@@ -101,7 +101,6 @@
                     value="value"
                     choices="props.record.data[props.name].selection.map((x)=>({value: x, label:x}))"
                     onSelect.bind="onChangeSelection"
-                    id="props.id"
                     searchable="true"
                 />
                 <div
@@ -117,7 +116,6 @@
                         value="value"
                         choices="props.record.data[props.name].selection.map((x)=>({value: x, label:x}))"
                         onSelect.bind="onChangeSelection"
-                        id="props.id"
                         searchable="true"
                     />
                 </div>

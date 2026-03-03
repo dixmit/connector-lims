@@ -234,7 +234,7 @@ test("Review Writing Selection on LIMS", async () => {
     expect("tbody tr:nth-child(7) .o_field_laboratory_value").toHaveText("option1");
     await click("tbody tr:nth-child(7) .o_field_laboratory_value");
     await animationFrame();
-    await click("tbody tr:nth-child(7) .o_field_laboratory_value input");
+    await click("tbody tr:nth-child(7) .o_field_laboratory_value button");
     await animationFrame();
     await click(".o_popover .o-dropdown-item:nth-child(4)");
     await animationFrame();
@@ -257,7 +257,7 @@ test("Review Writing Multi-Selection on LIMS", async () => {
     ).toHaveText("option3");
     await click("tbody tr:nth-child(8) .o_field_laboratory_value");
     await animationFrame();
-    await click("tbody tr:nth-child(8) .o_field_laboratory_value input");
+    await click("tbody tr:nth-child(8) .o_field_laboratory_value button");
     await animationFrame();
     await click(".o_popover .o-dropdown-item:nth-child(3)");
     await animationFrame();

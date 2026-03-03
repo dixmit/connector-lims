@@ -21,7 +21,7 @@ import {TagsList} from "@web/core/tags_list/tags_list";
 import {parseFloat} from "@web/views/fields/parsers";
 import {registry} from "@web/core/registry";
 import {standardFieldProps} from "@web/views/fields/standard_field_props";
-import {useDateTimePicker} from "@web/core/datetime/datetime_picker_hook";
+import { useDateTimePicker } from "@web/core/datetime/datetime_hook";
 import {useInputField} from "@web/views/fields/input_field_hook";
 import {useTagNavigation} from "@web/core/record_selectors/tag_navigation_hook";
 

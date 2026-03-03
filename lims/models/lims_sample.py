@@ -63,9 +63,9 @@ class LimsSample(models.Model):
         compute="_compute_progress",
         store=True,
     )
-    _identifier_unique = models.Constraint(
-        "unique(identifier, company_id)", "Sample identifier must be unique"
-    )
+    _sql_constraints = [
+         ("identifier_unique", "UNIQUE(identifier, company_id)", "Sample identifier must be unique."),
+    ]
 
     @api.model_create_multi
     def create(self, mvals):
